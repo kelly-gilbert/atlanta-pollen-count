@@ -20,7 +20,7 @@ base_url = 'http://www.atlantaallergy.com/pollen_counts/index/'
 
 # input date range
 start_date = '2019-03-01'
-end_date = '2019-03-15'
+end_date = '2019-03-04'
 
 
 # initialize the dates
@@ -89,7 +89,7 @@ while current_date <= end_date:
                # add results to list
                 contributor_dates.append(current_date)
                 contributor_types.append(contributor_type)
-                contributor_names.append(contributor_names)
+                contributor_names.append(contributor_name)
                 contributor_severities.append(contributor_severity)
 
  
@@ -117,7 +117,7 @@ while current_date <= end_date:
 total_days = abs(end_date - start_date).days + 1
 success_days = len(result_dates)
 error_days = len(error_list)
-print('Successfully processed ' + str(success_days) + ' of ' 
+print('\nSuccessfully processed ' + str(success_days) + ' of ' 
       + str(total_days) + ' days.\n')
 
 # print errors
@@ -129,22 +129,23 @@ if len(error_list) > 0:
 
 # convert to data frames
 pollen_count_df = pd.DataFrame( { 'date' : result_dates, 'pollen_count' : result_counts })
-pollen_contributors_df = pd.DataFrame( { 'date' : contributor_dates, 'contributor_type' : contributor_types, 'contributor_names' : contributor_names, 'contributor_severity' : contributor_severities})
-pollen_severity_df = pd.Data.Frame( { 'date' : severity_dates, 'severity_category' : severity_categories })
+pollen_contributors_df = pd.DataFrame( { 'date' : contributor_dates, 'contributor_type' : contributor_types, 
+                                        'contributor_names' : contributor_names, 'contributor_severity' : contributor_severities})
+pollen_severity_df = pd.DataFrame( { 'date' : severity_dates, 'severity_category' : severity_categories })
 
 pollen_count_df.head(10)
 pollen_contributors_df.head(10)
 pollen_severity_df.head(10)
 
-# results for debugging:
-#print(error_list)
-#for i in results:
-#    print(i)
-    
-# write results to file
-    
-pollen_count_df.to_csv('pollen_count_' + dt.strftime(start_date, '%Y-%m-%d') + '_to_' + dt.strftime(end_date, '%Y-%m-%d') +'.csv')
-    
-    
-    
-    
+print(contributor_types)
+print(pollen_contributors_df[contributor_type])
+
+
+# append the daily severity (high/med/low) to the main dataframe
+
+
+
+# write results to file   
+pollen_count_df.to_csv('\data\pollen_count_' + dt.strftime(start_date, '%Y-%m-%d') + '_to_' + dt.strftime(end_date, '%Y-%m-%d') +'.csv', index=False)
+pollen_contributors_df.to_csv('\data\pollen_count_contributors_' + dt.strftime(start_date, '%Y-%m-%d') + '_to_' + dt.strftime(end_date, '%Y-%m-%d') +'.csv')
+

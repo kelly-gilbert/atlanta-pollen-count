@@ -4,31 +4,31 @@ website, then write to a text file
 """
 
 
-# import the libraries
+# import libraries
 import datetime                  # date handling
 dt = datetime.date
-
 import requests                  # http requests
 from bs4 import BeautifulSoup    # html parsing
 import re                        # regex parsing
-
 import pandas as pd
 
 
 # base url (date is appended in loop)
 base_url = 'http://www.atlantaallergy.com/pollen_counts/index/'
 
-# input date range
-start_date = '2017-01-01'
-end_date = '2017-12-31'
+
+# input date range - starts 6/18/1991
+start_date = '2015-01-01'
+end_date = '2015-12-31'
 
 
-# initialize the dates
+# initialize dates as dates
 start_date = dt.fromisoformat(start_date)
 end_date = dt.fromisoformat(end_date)
 current_date = start_date
 
-# initialize the lists
+
+# initialize result lists
 error_list = []
 
 result_dates = []
@@ -43,6 +43,7 @@ severity_dates = []
 severity_categories = []
 
 
+# loop for each date in range
 while current_date <= end_date:
     print('Starting ' + str(current_date))
   
@@ -140,6 +141,6 @@ pollen_count_df2 = pd.merge(pollen_count_df, pollen_severity_df, how='left',
                             validate='1:m')
 
 
-# write results to file   
+# write results to files   
 pollen_count_df.to_csv('.\data\pollen_count_' + dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date) +'.csv', index=False)
 pollen_contributors_df.to_csv('.\data\pollen_count_contributors_' + dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date) +'.csv', index=False)

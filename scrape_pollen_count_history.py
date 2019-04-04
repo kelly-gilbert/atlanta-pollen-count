@@ -6,7 +6,7 @@ website, then write to a text file
 
 # import the libraries
 import datetime                  # date handling
-dt = datetime.datetime
+dt = datetime.date
 
 import requests                  # http requests
 from bs4 import BeautifulSoup    # html parsing
@@ -19,13 +19,13 @@ import pandas as pd
 base_url = 'http://www.atlantaallergy.com/pollen_counts/index/'
 
 # input date range
-start_date = '2019-03-01'
-end_date = '2019-03-04'
+start_date = '2017-01-01'
+end_date = '2017-12-31'
 
 
 # initialize the dates
-start_date = dt.strptime(start_date, '%Y-%m-%d')
-end_date = dt.strptime(end_date, '%Y-%m-%d')
+start_date = dt.fromisoformat(start_date)
+end_date = dt.fromisoformat(end_date)
 current_date = start_date
 
 # initialize the lists
@@ -133,19 +133,13 @@ pollen_contributors_df = pd.DataFrame( { 'date' : contributor_dates, 'contributo
                                         'contributor_names' : contributor_names, 'contributor_severity' : contributor_severities})
 pollen_severity_df = pd.DataFrame( { 'date' : severity_dates, 'severity_category' : severity_categories })
 
-pollen_count_df.head(10)
-pollen_contributors_df.head(10)
-pollen_severity_df.head(10)
 
-print(contributor_types)
-print(pollen_contributors_df[contributor_type])
-
-
-# append the daily severity (high/med/low) to the main dataframe
-
+# merge the daily severity (high/med/low) to the main dataframe
+pollen_count_df2 = pd.merge(pollen_count_df, pollen_severity_df, how='left', 
+                            on='date', left_index=False, right_index=False, sort=False,
+                            validate='1:m')
 
 
 # write results to file   
-pollen_count_df.to_csv('\data\pollen_count_' + dt.strftime(start_date, '%Y-%m-%d') + '_to_' + dt.strftime(end_date, '%Y-%m-%d') +'.csv', index=False)
-pollen_contributors_df.to_csv('\data\pollen_count_contributors_' + dt.strftime(start_date, '%Y-%m-%d') + '_to_' + dt.strftime(end_date, '%Y-%m-%d') +'.csv')
-
+pollen_count_df.to_csv('.\data\pollen_count_' + dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date) +'.csv', index=False)
+pollen_contributors_df.to_csv('.\data\pollen_count_contributors_' + dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date) +'.csv', index=False)

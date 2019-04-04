@@ -18,8 +18,8 @@ base_url = 'http://www.atlantaallergy.com/pollen_counts/index/'
 
 
 # input date range - starts 6/18/1991
-start_date = '2015-01-01'
-end_date = '2015-12-31'
+start_date = '2013-01-01'
+end_date = '2013-12-31'
 
 
 # initialize dates as dates

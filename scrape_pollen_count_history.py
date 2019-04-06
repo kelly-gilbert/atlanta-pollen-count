@@ -1,6 +1,7 @@
 """
 Scrape daily Atlanta pollen count data from the Atlanta Allergy and Asthma
-website, then write to a text file
+website (http://www.atlantaallergy.com/pollen_counts), 
+then write to a text file
 """
 
 
@@ -21,17 +22,13 @@ def increment_date(in_date, num_days):
 
 def get_pollen_counts(start_date, end_date):
     
-    
     # base url (date is appended in loop)
-    base_url = (
-        'http://www.atlantaallergy.com/pollen_counts/index/'
-    )
+    base_url = 'http://www.atlantaallergy.com/pollen_counts/index/'
        
     # initialize dates as dates
     start_date = dt.fromisoformat(start_date)
     end_date = dt.fromisoformat(end_date)
     current_date = start_date
-    
     
     # initialize result lists
     error_list = []
@@ -49,7 +46,7 @@ def get_pollen_counts(start_date, end_date):
     
     
     # loop for each date in range
-    print('Starting loop for ' + str(start_date) + '...')
+    print('\n\nStarting loop for ' + str(start_date) + '...')
     while current_date <= end_date:
         #print('Starting ' + str(current_date))
     
@@ -98,28 +95,18 @@ def get_pollen_counts(start_date, end_date):
     
         # get the detailed contributors
         for g in soup.find_all(class_='gauge'):
-            # get the contributor (trees, weeds, etc.)
-            contributor_type = (
-                g.h5.text
-            )  # return text in h5 tag
-            contributor_type = re.match(
-                '^(\w)+', contributor_type
-            )[
-                0
-            ]  # first word
-            #
+            # get the contributor (trees, weeds, etc.) in h5 tag
+            contributor_type = re.match('^(\w)+', g.h5.text)[0]
+            
             # get the list of types (sycamore, etc.)
             contributor_name = g.p.text.strip()
     
             # get the severity value (0 - 100%)
-            contributor_severity = g.find(
-                class_='needle'
-            )['style']
-            contributor_severity = re.match(
-                '.*?([\d\.+]+)%', contributor_severity
-            )[1]
+            contributor_severity = g.find(class_='needle')['style']
+            contributor_severity = re.match('.*?([\d\.+]+)%', 
+                                            contributor_severity)[1]
     
-            # add results to list
+            # add results to lists
             contributor_dates.append(current_date)
             contributor_types.append(contributor_type)
             contributor_names.append(contributor_name)
@@ -129,36 +116,25 @@ def get_pollen_counts(start_date, end_date):
     
         # if it is the last day of the month, or the last day in the range,
         # scrape the severity level from the calendar
-        if (
-            current_date.month
-            != (
-                current_date + datetime.timedelta(days=1)
-            ).month
-            or current_date == end_date
-        ):
+        if current_date.month !=  \
+                   (current_date + datetime.timedelta(days=1)).month \
+           or current_date == end_date:
         
             for d in soup.find_all(
-                class_=re.compile('calendar-day current .*')
+                    class_=re.compile('calendar-day current .*')
             ):
                 severity_level = re.search(
                     '.*?calendar-day current (.*?)\\">',
-                    str(d),
-                )[1]
+                    str(d),)[1]
                 severity_date = datetime.date(
                     current_date.year,
                     current_date.month,
-                    int(
-                        d.find(
-                            class_='day-num'
-                        ).text.strip()
-                    ),
+                    int(d.find(class_='day-num').text.strip()),
                 )
         
                 # append results
                 severity_dates.append(severity_date)
-                severity_levels.append(
-                    severity_level
-                )
+                severity_levels.append(severity_level)
          
         # increment the date
         current_date = increment_date(current_date, 1)
@@ -169,7 +145,6 @@ def get_pollen_counts(start_date, end_date):
     # print result counts
     total_days = abs(end_date - start_date).days + 1
     success_days = len(result_dates)
-    error_days = len(error_list)
     print(
         '\nSuccessfully processed '
         + str(success_days)
@@ -224,31 +199,54 @@ def get_pollen_counts(start_date, end_date):
     
     
     # write results to files
+    
+    # if full year, name the file with the year, otherwise use the date range
+    if start_date.month == 1 and start_date.day == 1  \
+       and end_date.month == 12 and end_date.day == 31:
+           file_date = str(end_date.year)
+    else:
+       file_date = dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date)
+    print(file_date)
+
     print('Writing results to files...')
     pollen_count_df2.to_csv(
-        '.\data\pollen_count_'
-        + dt.isoformat(start_date)
-        + '_to_'
-        + dt.isoformat(end_date)
-        + '.csv',
+        '.\data\pollen_count_' + file_date + '.csv',
         index=False,
     )
     
     pollen_contributors_df.to_csv(
-        '.\data\pollen_count_contributors_'
-        + dt.isoformat(start_date)
-        + '_to_'
-        + dt.isoformat(end_date)
-        + '.csv',
+        '.\data\pollen_count_contributors_' + file_date + '.csv',
         index=False,
     )
     
-    print('Done')
+    print('\nDone')
     
 
+# get data for each year    
+get_pollen_counts('2019-01-01', '2019-04-04')
+get_pollen_counts('2018-01-01', '2018-12-31')
 get_pollen_counts('2017-01-01', '2017-12-31')
+
 get_pollen_counts('2016-01-01', '2016-12-31')
 get_pollen_counts('2015-01-01', '2015-12-31')
 get_pollen_counts('2014-01-01', '2014-12-31')
 get_pollen_counts('2013-01-01', '2013-12-31')
 get_pollen_counts('2012-01-01', '2012-12-31')
+
+get_pollen_counts('2011-01-01', '2011-12-31')
+get_pollen_counts('2010-01-01', '2010-12-31')
+get_pollen_counts('2009-01-01', '2009-12-31')
+get_pollen_counts('2008-01-01', '2008-12-31')
+get_pollen_counts('2007-01-01', '2007-12-31')
+
+get_pollen_counts('2006-01-01', '2006-12-31')
+get_pollen_counts('2005-01-01', '2005-12-31')
+get_pollen_counts('2004-01-01', '2004-12-31')
+get_pollen_counts('2003-01-01', '2003-12-31')
+get_pollen_counts('2002-01-01', '2002-12-31')
+
+get_pollen_counts('2001-01-01', '2001-12-31')
+get_pollen_counts('2000-01-01', '2000-12-31')
+get_pollen_counts('1999-01-01', '1999-12-31')
+get_pollen_counts('1998-01-01', '1998-12-31')
+get_pollen_counts('1997-01-01', '1997-12-31')

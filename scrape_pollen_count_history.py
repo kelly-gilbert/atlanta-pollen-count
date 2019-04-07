@@ -7,7 +7,6 @@ then write to a text file
 
 # import libraries
 import datetime  # date handling
-
 dt = datetime.date
 import requests  # http requests
 from bs4 import BeautifulSoup  # html parsing
@@ -15,16 +14,51 @@ import re  # regex parsing
 import pandas as pd
 
 
+# define functions
 def increment_date(in_date, num_days):
     """ increment the date by num_days """
     in_date += datetime.timedelta(days=1)
     return in_date
 
+
+def is_end_of_month(in_date):
+    """ return True if in_date is the end of the month """
+    if in_date.month != (in_date + datetime.timedelta(days=1)).month:
+        return True
+    else:
+        return False
+    
+
+def get_severity_levels(current_date, soup, severity_dates, severity_levels):
+    """
+    if it is the last day of the month, or the last day in the range,
+    scrape the severity level from the calendar at the bottom of the page
+    """
+
+    for d in soup.find_all(class_=re.compile('calendar-day current .*')):
+        severity_level = re.search(
+            '.*?calendar-day current (.*?)\\">',
+            str(d),)[1]
+        severity_date = datetime.date(
+            current_date.year,
+            current_date.month,
+            int(d.find(class_='day-num').text.strip()),
+        )
+
+        # append results
+        severity_dates.append(severity_date)
+        severity_levels.append(severity_level)
+
+
 def get_pollen_counts(start_date, end_date):
+    """ 
+    retrieve the pollen count data for the specified date range
+    and write it to a csv file 
+    """
     
     # base url (date is appended in loop)
     base_url = 'http://www.atlantaallergy.com/pollen_counts/index/'
-       
+ 
     # initialize dates as dates
     start_date = dt.fromisoformat(start_date)
     end_date = dt.fromisoformat(end_date)
@@ -39,24 +73,25 @@ def get_pollen_counts(start_date, end_date):
     contributor_dates = []
     contributor_types = []
     contributor_names = []
-    contributor_severities = []
+    contributor_severity_pcts = []
+    contributor_severity_labels = []
     
     severity_dates = []
     severity_levels = []
-    
+
     
     # loop for each date in range
-    print('\n\nStarting loop for ' + str(start_date) + '...')
-    while current_date <= end_date:
-        #print('Starting ' + str(current_date))
+    print('Starting loop : ' + str(start_date) + '...')
     
+    while current_date <= end_date:  
         # send the get request with the current date
-        # the user agent is set to avoid blocking; there is no specific reason for
-        # using 'custom' (it could be any string)
+        # the user agent is set to avoid blocking; there is no specific reason 
+        # for using 'custom' (it could be any string)
         r = requests.get(
             base_url + dt.strftime(current_date, '%Y/%m/%d'),
             headers={'User-Agent': 'Custom'},
         )
+
     
         # if the request was not successful, log an error
         if r.status_code != 200:
@@ -64,11 +99,13 @@ def get_pollen_counts(start_date, end_date):
                 {
                     'error_date': current_date,
                     'error_type': 'Request status: '
-                    + str(r.status_code)
-                    + ' - '
-                    + r.reason,
+                        + str(r.status_code)
+                        + ' - '
+                        + r.reason,
                 }
             )
+            
+            # go to the next date
             current_date = increment_date(current_date, 1)
             continue
         
@@ -84,58 +121,65 @@ def get_pollen_counts(start_date, end_date):
                     'error_type': 'Pollen count not available',
                 }
             )
-            current_date = increment_date(current_date, 1)
+            
+            # get severity levels (if end of month or end of range)
+            # the end of month may fall on a weekend with no count data
+            if is_end_of_month(current_date) or current_date == end_date:
+                get_severity_levels(
+                    current_date, 
+                    soup, 
+                    severity_dates, 
+                    severity_levels
+                )
+
+            # go to the next date
+            current_date = increment_date(current_date, 1)                  
             continue
        
-        daily_count = daily_count.text.strip()
-    
-        # append the daily results
+        
+        # if the count exists, append it to the daily results list
         result_dates.append(current_date)
-        result_counts.append(daily_count)
-    
+        result_counts.append(daily_count.text.strip())
+
+
         # get the detailed contributors
-        for g in soup.find_all(class_='gauge'):
+        for gauge in soup.find_all(class_='gauge'):
             # get the contributor (trees, weeds, etc.) in h5 tag
-            contributor_type = re.match('^(\w)+', g.h5.text)[0]
+            contributor_type = re.match('^(\w)+', gauge.h5.text)[0]
             
             # get the list of types (sycamore, etc.)
-            contributor_name = g.p.text.strip()
+            contributor_name = gauge.p.text.strip()
     
-            # get the severity value (0 - 100%)
-            contributor_severity = g.find(class_='needle')['style']
-            contributor_severity = re.match('.*?([\d\.+]+)%', 
-                                            contributor_severity)[1]
+            # get the severity value (0 - 99)
+            contributor_severity_pct = gauge.find(class_='needle')['style']
+            contributor_severity_pct = re.match('.*?([\d\.+]+)%', 
+                                            contributor_severity_pct)[1]
+
+            # get the severity value (0 - 99)
+            contributor_severity_label = gauge.find(
+                    class_=re.compile('.*? active')
+                ).text
     
             # add results to lists
             contributor_dates.append(current_date)
             contributor_types.append(contributor_type)
             contributor_names.append(contributor_name)
-            contributor_severities.append(
-                contributor_severity
+            contributor_severity_pcts.append(contributor_severity_pct)
+            contributor_severity_labels.append(
+                contributor_severity_label
             )
     
-        # if it is the last day of the month, or the last day in the range,
-        # scrape the severity level from the calendar
-        if current_date.month !=  \
-                   (current_date + datetime.timedelta(days=1)).month \
-           or current_date == end_date:
+    
+        # get severity levels
+        if is_end_of_month(current_date) or current_date == end_date:
+            get_severity_levels(
+                current_date, 
+                soup, 
+                severity_dates, 
+                severity_levels
+            )
+
         
-            for d in soup.find_all(
-                    class_=re.compile('calendar-day current .*')
-            ):
-                severity_level = re.search(
-                    '.*?calendar-day current (.*?)\\">',
-                    str(d),)[1]
-                severity_date = datetime.date(
-                    current_date.year,
-                    current_date.month,
-                    int(d.find(class_='day-num').text.strip()),
-                )
-        
-                # append results
-                severity_dates.append(severity_date)
-                severity_levels.append(severity_level)
-         
         # increment the date
         current_date = increment_date(current_date, 1)
     
@@ -146,11 +190,8 @@ def get_pollen_counts(start_date, end_date):
     total_days = abs(end_date - start_date).days + 1
     success_days = len(result_dates)
     print(
-        '\nSuccessfully processed '
-        + str(success_days)
-        + ' of '
-        + str(total_days)
-        + ' days.\n'
+        'Successfully processed ' + str(success_days) + ' of '
+        + str(total_days) + ' days.'
     )
     
     # print errors
@@ -166,6 +207,7 @@ def get_pollen_counts(start_date, end_date):
     
     # convert to data frames
     print('Creating data frames...')
+    
     pollen_count_df = pd.DataFrame(
         {'date': result_dates, 'pollen_count': result_counts}
     )
@@ -174,7 +216,8 @@ def get_pollen_counts(start_date, end_date):
             'date': contributor_dates,
             'contributor_type': contributor_types,
             'contributor_names': contributor_names,
-            'contributor_severity': contributor_severities,
+            'contributor_severity_pct': contributor_severity_pcts,
+            'contributor_severity_label' : contributor_severity_labels,
         }
     )
     pollen_severity_df = pd.DataFrame(
@@ -183,7 +226,7 @@ def get_pollen_counts(start_date, end_date):
             'severity_level': severity_levels,
         }
     )
-    
+        
     
     # merge the daily severity (high/med/low) to the main dataframe
     pollen_count_df2 = pd.merge(
@@ -206,7 +249,6 @@ def get_pollen_counts(start_date, end_date):
            file_date = str(end_date.year)
     else:
        file_date = dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date)
-    print(file_date)
 
     print('Writing results to files...')
     pollen_count_df2.to_csv(
@@ -219,11 +261,11 @@ def get_pollen_counts(start_date, end_date):
         index=False,
     )
     
-    print('\nDone')
+    print('Done\n\n')
     
 
 # get data for each year    
-get_pollen_counts('2019-01-01', '2019-04-04')
+get_pollen_counts('2019-01-01', '2019-04-06')
 get_pollen_counts('2018-01-01', '2018-12-31')
 get_pollen_counts('2017-01-01', '2017-12-31')
 
@@ -249,4 +291,4 @@ get_pollen_counts('2001-01-01', '2001-12-31')
 get_pollen_counts('2000-01-01', '2000-12-31')
 get_pollen_counts('1999-01-01', '1999-12-31')
 get_pollen_counts('1998-01-01', '1998-12-31')
-get_pollen_counts('1997-01-01', '1997-12-31')
+#get_pollen_counts('1997-01-01', '1997-12-31')

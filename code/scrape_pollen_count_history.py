@@ -12,6 +12,7 @@ import requests  # http requests
 from bs4 import BeautifulSoup  # html parsing
 import re  # regex parsing
 import pandas as pd
+import os
 
 
 # define functions
@@ -242,6 +243,7 @@ def get_pollen_counts(start_date, end_date):
     
     
     # write results to files
+    print('Writing results to files...')
     
     # if full year, name the file with the year, otherwise use the date range
     if start_date.month == 1 and start_date.day == 1  \
@@ -249,46 +251,48 @@ def get_pollen_counts(start_date, end_date):
            file_date = str(end_date.year)
     else:
        file_date = dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date)
+       
+    # get the path   
+    file_path = os.path.dirname(os.getcwd()).replace('\\', '\\\\')    # parent directory
 
-    print('Writing results to files...')
     pollen_count_df2.to_csv(
-        '.\data\pollen_count_' + file_date + '.csv',
+        file_path + '\\data\\pollen_count_' + file_date + '.csv',
         index=False,
     )
     
     pollen_contributors_df.to_csv(
-        '.\data\pollen_count_contributors_' + file_date + '.csv',
+        file_path + '\\data\\pollen_count_contributors_' + file_date + '.csv',
         index=False,
     )
     
     print('Done\n\n')
     
-
-# get data for each year    
+    
+# get data for each year  
 get_pollen_counts('2019-01-01', '2019-04-06')
-get_pollen_counts('2018-01-01', '2018-12-31')
-get_pollen_counts('2017-01-01', '2017-12-31')
-
-get_pollen_counts('2016-01-01', '2016-12-31')
-get_pollen_counts('2015-01-01', '2015-12-31')
-get_pollen_counts('2014-01-01', '2014-12-31')
-get_pollen_counts('2013-01-01', '2013-12-31')
-get_pollen_counts('2012-01-01', '2012-12-31')
-
-get_pollen_counts('2011-01-01', '2011-12-31')
-get_pollen_counts('2010-01-01', '2010-12-31')
-get_pollen_counts('2009-01-01', '2009-12-31')
-get_pollen_counts('2008-01-01', '2008-12-31')
-get_pollen_counts('2007-01-01', '2007-12-31')
-
-get_pollen_counts('2006-01-01', '2006-12-31')
-get_pollen_counts('2005-01-01', '2005-12-31')
-get_pollen_counts('2004-01-01', '2004-12-31')
-get_pollen_counts('2003-01-01', '2003-12-31')
-get_pollen_counts('2002-01-01', '2002-12-31')
-
-get_pollen_counts('2001-01-01', '2001-12-31')
-get_pollen_counts('2000-01-01', '2000-12-31')
-get_pollen_counts('1999-01-01', '1999-12-31')
-get_pollen_counts('1998-01-01', '1998-12-31')
+#get_pollen_counts('2018-01-01', '2018-12-31')
+#get_pollen_counts('2017-01-01', '2017-12-31')
+#
+#get_pollen_counts('2016-01-01', '2016-12-31')
+#get_pollen_counts('2015-01-01', '2015-12-31')
+#get_pollen_counts('2014-01-01', '2014-12-31')
+#get_pollen_counts('2013-01-01', '2013-12-31')
+#get_pollen_counts('2012-01-01', '2012-12-31')
+#
+#get_pollen_counts('2011-01-01', '2011-12-31')
+#get_pollen_counts('2010-01-01', '2010-12-31')
+#get_pollen_counts('2009-01-01', '2009-12-31')
+#get_pollen_counts('2008-01-01', '2008-12-31')
+#get_pollen_counts('2007-01-01', '2007-12-31')
+#
+#get_pollen_counts('2006-01-01', '2006-12-31')
+#get_pollen_counts('2005-01-01', '2005-12-31')
+#get_pollen_counts('2004-01-01', '2004-12-31')
+#get_pollen_counts('2003-01-01', '2003-12-31')
+#get_pollen_counts('2002-01-01', '2002-12-31')
+#
+#get_pollen_counts('2001-01-01', '2001-12-31')
+#get_pollen_counts('2000-01-01', '2000-12-31')
+#get_pollen_counts('1999-01-01', '1999-12-31')
+#get_pollen_counts('1998-01-01', '1998-12-31')
 #get_pollen_counts('1997-01-01', '1997-12-31')

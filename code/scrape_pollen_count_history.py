@@ -142,14 +142,19 @@ def get_pollen_counts(start_date, end_date):
         result_dates.append(current_date)
         result_counts.append(daily_count.text.strip())
 
-
         # get the detailed contributors
         for gauge in soup.find_all(class_='gauge'):
-            # get the contributor (trees, weeds, etc.) in h5 tag
-            contributor_type = re.match('^(\w)+', gauge.h5.text)[0]
+            # get the contributor (trees, weeds, etc.) in h5 tag (or strong tag for mold)
+            if gauge.h5 == None:
+              contributor_type = 'Mold'
+            else:    
+              contributor_type = re.match('^(\w)+', gauge.h5.text)[0]
             
             # get the list of types (sycamore, etc.)
-            contributor_name = gauge.p.text.strip()
+            if contributor_type == 'Mold':
+              contributor_name = 'Mold'
+            else: 
+              contributor_name = gauge.p.text.strip()
     
             # get the severity value (0 - 99)
             contributor_severity_pct = gauge.find(class_='needle')['style']
@@ -269,7 +274,7 @@ def get_pollen_counts(start_date, end_date):
     
     
 # get data for each year  
-get_pollen_counts('2019-01-01', '2019-04-06')
+get_pollen_counts('2019-01-01', '2019-12-31')
 #get_pollen_counts('2018-01-01', '2018-12-31')
 #get_pollen_counts('2017-01-01', '2017-12-31')
 #

@@ -13,7 +13,7 @@ import requests  # http requests
 from bs4 import BeautifulSoup  # html parsing
 import re  # regex parsing
 from pandas import DataFrame, merge
-from os import getcwd, path
+from os import getcwd
 
 
 # define functions
@@ -215,7 +215,7 @@ def get_pollen_counts(start_date, end_date):
     # convert to data frames
     print('Creating data frames...')
     
-    pollen_count_df = pd.DataFrame(
+    pollen_count_df = DataFrame(
         {'date': result_dates, 'pollen_count': result_counts}
     )
     pollen_contributors_df = DataFrame(
@@ -259,7 +259,7 @@ def get_pollen_counts(start_date, end_date):
        file_date = dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date)
        
     # get the path   
-    file_path = path.dirname(getcwd()) + '\\data\\'    # parent directory
+    file_path = getcwd() + '\\data\\'    # parent directory
 
     # write the files
     pollen_count_df2.to_csv(
@@ -276,4 +276,4 @@ def get_pollen_counts(start_date, end_date):
     
     
 # get data for each year  
-get_pollen_counts('2019-01-01', '2019-12-31')
+get_pollen_counts('2020-04-06', '2020-05-08')

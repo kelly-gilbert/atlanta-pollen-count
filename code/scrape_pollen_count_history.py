@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup  # html parsing
 import re  # regex parsing
 from pandas import DataFrame, merge
 from os import getcwd
+from csv import QUOTE_ALL
 
 
 # define functions
@@ -264,12 +265,12 @@ def get_pollen_counts(start_date, end_date):
     # write the files
     pollen_count_df2.to_csv(
         file_path + 'pollen_count_' + file_date + '.csv',
-        index=False,
+        index=False, quoting=QUOTE_ALL
     )
     
     pollen_contributors_df.to_csv(
         file_path + 'pollen_count_contributors_' + file_date + '.csv',
-        index=False,
+        index=False, quoting=QUOTE_ALL
     )
     
     print('Done\n\n')

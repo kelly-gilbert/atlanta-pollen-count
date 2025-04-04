@@ -13,7 +13,7 @@ import requests  # http requests
 from bs4 import BeautifulSoup  # html parsing
 import re  # regex parsing
 from pandas import DataFrame, merge
-from os import getcwd
+from os import getcwd, path
 from csv import QUOTE_ALL
 
 
@@ -40,7 +40,7 @@ def get_severity_levels(current_date, soup, severity_dates, severity_levels):
 
     for d in soup.find_all(class_=re.compile('calendar-day current .*')):
         severity_level = re.search(
-            '.*?calendar-day current (.*?)\\">',
+            r'.*?calendar-day current (.*?)\">',
             str(d),)[1]
         severity_date = datetime.date(
             current_date.year,
@@ -145,12 +145,13 @@ def get_pollen_counts(start_date, end_date):
         result_counts.append(daily_count.text.strip())
 
         # get the detailed contributors
-        for gauge in soup.find_all(class_='gauge'):
+        for gauge in soup.find_all(class_='gauge')[0:]:
+
             # get the contributor (trees, weeds, etc.) in h5 tag (or strong tag for mold)
-            if gauge.h5 == None:
+            if gauge.h3 == None:
               contributor_type = 'Mold'
             else:    
-              contributor_type = re.match('^(\w)+', gauge.h5.text)[0]
+              contributor_type = re.match(r'^(\w)+', gauge.h3.text)[0]
             
             # get the list of types (sycamore, etc.)
             if contributor_type == 'Mold':
@@ -160,14 +161,14 @@ def get_pollen_counts(start_date, end_date):
     
             # get the severity value (0 - 99)
             contributor_severity_pct = gauge.find(class_='needle')['style']
-            contributor_severity_pct = re.match('.*?([\d\.+]+)%', 
+            contributor_severity_pct = re.match(r'.*?([\d\.+]+)%', 
                                             contributor_severity_pct)[1]
 
             # get the severity value (0 - 99)
             contributor_severity_label = gauge.find(
-                    class_=re.compile('.*? active')
+                    class_=re.compile(r'.*? active')
                 ).text
-    
+
             # add results to lists
             contributor_dates.append(current_date)
             contributor_types.append(contributor_type)
@@ -176,8 +177,8 @@ def get_pollen_counts(start_date, end_date):
             contributor_severity_labels.append(
                 contributor_severity_label
             )
-    
-    
+
+
         # get severity levels
         if is_end_of_month(current_date) or current_date == end_date:
             get_severity_levels(
@@ -190,6 +191,9 @@ def get_pollen_counts(start_date, end_date):
         
         # increment the date
         current_date = increment_date(current_date, 1)
+
+        if len(result_dates) % 20 == 0:
+            print(f"    Completed {len(result_dates)} dates, currently on {current_date}...")
     
     # end of while loop
     
@@ -260,21 +264,20 @@ def get_pollen_counts(start_date, end_date):
        file_date = dt.isoformat(start_date) + '_to_' + dt.isoformat(end_date)
        
     # get the path   
-    file_path = getcwd() + '\\data\\'    # parent directory
+    file_path = path.join(path.dirname(getcwd()), 'data', 'outputs')    # parent directory
 
     # write the files
     pollen_count_df2.to_csv(
-        file_path + 'pollen_count_' + file_date + '.csv',
+        path.join(file_path, 'pollen_count_' + file_date + '.csv'),
         index=False, quoting=QUOTE_ALL
     )
     
     pollen_contributors_df.to_csv(
-        file_path + 'pollen_count_contributors_' + file_date + '.csv',
+        path.join(file_path, 'pollen_count_contributors_' + file_date + '.csv'),
         index=False, quoting=QUOTE_ALL
     )
     
     print('Done\n\n')
     
     
-# get data for each year  
-get_pollen_counts('2020-04-06', '2020-05-08')
+get_pollen_counts('2025-04-01', dt.today().isoformat())
